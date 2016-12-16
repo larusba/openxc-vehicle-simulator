@@ -37,34 +37,43 @@ pathList.each
 
 	def path = it
 
-	vehicleCount.times
+	// Car lenght = 4 meter	
+	if(deltaTime <= 4*msPerMeter)
 	{
-		def instant = startTime
-		def prevPoint = null
-		def totalLen = 0
-		def totTime = 0
-		vehicleId = randomUUID() as String
-		path.streets.each
+		println "Too mucn vehicle in delta time"
+	}
+	else
+	{
+
+		vehicleCount.times
 		{
-			def streetName = it.name
-			def points = it.points
-			points.each
+			def instant = startTime
+			def prevPoint = null
+			def totalLen = 0
+			def totTime = 0
+			vehicleId = randomUUID() as String
+			path.streets.each
 			{
-				if(prevPoint == null)
+				def streetName = it.name
+				def points = it.points
+				points.each
 				{
-					prevPoint = it	
+					if(prevPoint == null)
+					{
+						prevPoint = it	
+					}
+					def len = calculateDistance(Double.valueOf(prevPoint.lat),Double.valueOf(prevPoint.lon),Double.valueOf(it.lat),Double.valueOf(it.lon))
+					totalLen += len
+					long travelTime = len * msPerMeter
+					totTime += travelTime
+					instant += travelTime
+					println "${vehicleId},${instant},${it.lat},${it.lon}"
+					prevPoint = it
 				}
-				def len = calculateDistance(Double.valueOf(prevPoint.lat),Double.valueOf(prevPoint.lon),Double.valueOf(it.lat),Double.valueOf(it.lon))
-				totalLen += len
-				long travelTime = len * msPerMeter
-				totTime += travelTime
-				instant += travelTime
-				println "${vehicleId},${instant},${it.lat},${it.lon}"
-				prevPoint = it
 			}
-		}
-		startTime = startTime + deltaTime
-		//println "${path.path_id} percorso lungo ${totalLen} metri percorso in ${totTime} ms"
-	} //vehicle_count
+			startTime = startTime + deltaTime
+			//println "${path.path_id} percorso lungo ${totalLen} metri percorso in ${totTime} ms"
+		} //vehicle_count
+	} //else deltaTime
 } //paths
 
