@@ -1,0 +1,7 @@
+*.json
+*.csv
+*.png
+*.xml
+*.cypher
+dump
+
