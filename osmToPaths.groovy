@@ -128,9 +128,9 @@ pathList.each
 
 		def finePoints = []
 		def prevPoint = it.points[0]
-		finePoints.add(prevPoint)	
 		it.points.each
 		{
+			finePoints.add(prevPoint)	
 			Double lat1 = prevPoint.lat
 			Double lon1 = prevPoint.lon
 			Double lat2 = it.lat

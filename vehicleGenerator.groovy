@@ -44,6 +44,7 @@ pathList.each
 	}
 	else
 	{
+		println "vechicle_id,timestamp,latitude,longitude"
 
 		vehicleCount.times
 		{
