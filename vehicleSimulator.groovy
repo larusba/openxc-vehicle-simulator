@@ -11,9 +11,13 @@ def deltaTime = deltaTimeSecond * 1000  //millis
 def startTime = System.currentTimeMillis()
 def pointDistance = 4 //meter
 
+//INPUT
 def pathsFile = new File( args[0] )
 def blockageFile = new File( args[1] )
-def geospatialFile = new File("latitute_longitude.csv")
+
+//OUTPUT
+def geospatialFile = new File("data/latitute_longitude.csv")
+def ignitionFile = new File("data/ignition_status.csv")
 
 def jsonSlurper = new JsonSlurper()
 
@@ -21,6 +25,12 @@ def pathList = jsonSlurper.parse(pathsFile)
 def blockageList = jsonSlurper.parse(blockageFile)
 
 def streetMap = [:]
+
+
+//OUTPUT HEADERS
+geospatialFile << "vechicle_id,timestamp,latitude,longitude\n"
+ignitionFile  << "vechicle_id,timestamp,value\n"
+
 /*
 def calculateDistance = { lat1,lon1,lat2,lon2 ->
 	earthRadius = 6371000 // raggio della terra
@@ -153,7 +163,13 @@ blockageList.each{
 	def bp = geomap.blockPoint(it,it.deltaTime*1000)
 }
 
-geospatialFile << "vechicle_id,timestamp,latitude,longitude\n"
+
+vehicles.each{
+	ignitionFile  << "${it.id},${it.currentTime},run\n"
+}
+
+
+
 int vehiclesInRace = vehicles.size()
 //change with something
 while(vehiclesInRace > 0){
@@ -215,3 +231,6 @@ while(vehiclesInRace > 0){
 	
 } //while vehicle in race
 
+vehicles.each{
+	ignitionFile  << "${it.id},${it.currentTime},off\n"
+}
