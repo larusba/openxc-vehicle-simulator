@@ -6,8 +6,10 @@ import groovy.json.*
 import static java.util.UUID.randomUUID 
 
 //TODO esternalizzare?
-def deltaTime = 10 * 1000  //millis
+def deltaTimeSecond=10
+def deltaTime = deltaTimeSecond * 1000  //millis
 def startTime = System.currentTimeMillis()
+def pointDistance = 4 //meter
 int maxNodes = 5  //numero massimo di nodi percorribili per unità di tempo
 
 def pathsFile = new File( args[0] )
@@ -39,6 +41,7 @@ class Vehicle
 	long currentTime
 	int currentPointIndex
 	boolean arrived
+	int maxPointsInDeltaTime
 }
 
 //join point from all paths
@@ -52,7 +55,8 @@ class GeoMap{
 	}
 	def addPoint ( p ){
 		p.blocked = false
-		p.blockCount = 0
+		p.blockTime = 0
+		p.firstTimeQueue = -1
 		p.occupied = false 
 		points.put("${p.lat},${p.lon}".toString(),p)
 	}//addPoint
@@ -63,13 +67,19 @@ class GeoMap{
 		def gp = getPoint(p)
 		return gp.blocked
 	}
-	def queueIn(p){
+	def queueIn(p,t){
 		def gp = getPoint(p)
-		gp.blockCount--
-		if(gp.blockCount <= 0)
+		if(gp.firstTimeQueue > 0)
 		{
-			gp.blockCount = 0
-			gp.blocked = false
+			def rim = t - gp.firstTimeQueue
+			if(rim > gp.blockTime)
+			{
+				gp.blocked = false
+				gp.firstTimeQueue = -1
+			}
+		}else
+		{
+			gp.firstTimeQueue = t	
 		}
 	}
 	def blockPoint(p,c){
@@ -77,7 +87,7 @@ class GeoMap{
 		if(! gp.blocked)
 		{
 			gp.blocked = true
-			gp.blockCount = c
+			gp.blockTime = c
 		}
 	}
 	def occupyPoint(p){
@@ -105,8 +115,10 @@ def vehicles = []
 pathList.each
 {
 	def vehicleCount = it.vehicle_count
-	def avgSpeed = it.avg_speed //in KM/h
-	long msPerMeter = 3600/avgSpeed 
+	def maxSpeed = it.max_speed //in KM/h
+	Double maxSpeedMS = maxSpeed / 3.6  // meter per second
+	Double pointPerSecond = maxSpeedMS / pointDistance 
+	int maxPoints = pointPerSecond * deltaTimeSecond
 
 	def path = it
 
@@ -130,6 +142,7 @@ pathList.each
 		vehicle.currentPointIndex = 0
 		vehicle.arrived = false
 		vehicle.points = pointsPath
+		vehicle.maxPointsInDeltaTime=maxPoints
 	} //vehicle_count
 
 	startTime += deltaTime
@@ -137,7 +150,7 @@ pathList.each
 
 //blockage settings
 blockageList.each{
-	def bp = geomap.blockPoint(it,it.vehicleCount)
+	def bp = geomap.blockPoint(it,it.deltaTime*1000)
 }
 
 println "vechicle_id,timestamp,latitude,longitude"
@@ -154,7 +167,7 @@ while(vehiclesInRace > 0){
 
 			if(geomap.isBlocked(point))
 			{
-				geomap.queueIn(point)	
+				geomap.queueIn(point,vehicle.currentTime)	
 			}else{
 
 				boolean samePoint = true
