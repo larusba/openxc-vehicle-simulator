@@ -18,6 +18,7 @@ def blockageFile = new File( args[1] )
 //OUTPUT
 def geospatialFile = new File("data/latitute_longitude.csv")
 def ignitionFile = new File("data/ignition_status.csv")
+def speedFile = new File("data/vehicle_speed.csv")
 
 def jsonSlurper = new JsonSlurper()
 
@@ -30,6 +31,7 @@ def streetMap = [:]
 //OUTPUT HEADERS
 geospatialFile << "vechicle_id,timestamp,latitude,longitude\n"
 ignitionFile  << "vechicle_id,timestamp,value\n"
+speedFile  << "vechicle_id,timestamp,value\n"
 
 /*
 def calculateDistance = { lat1,lon1,lat2,lon2 ->
@@ -166,6 +168,7 @@ blockageList.each{
 
 vehicles.each{
 	ignitionFile  << "${it.id},${it.currentTime},run\n"
+	speedFile  << "${it.id},${it.currentTime},0\n"
 }
 
 
@@ -178,6 +181,7 @@ while(vehiclesInRace > 0){
 		def pointsToRun = Math.abs(new Random().nextInt() %  vehicle.maxPointsInDeltaTime) + 1
 		long partialTime = deltaTime / pointsToRun
 		def point = vehicle.points[vehicle.currentPointIndex]	
+		long totDistance = 0
 
 		def internalTime = vehicle.currentTime
 		pointsToRun.times{
@@ -211,6 +215,7 @@ while(vehiclesInRace > 0){
 							geomap.freePoint(point)
 							point = nextPoint
 							vehicle.currentPointIndex = nextPosition
+							totDistance += pointDistance
 						}
 					}
 					else
@@ -226,6 +231,9 @@ while(vehiclesInRace > 0){
 		vehicle.currentTime += deltaTime
 		if(!vehicle.arrived){
 			geospatialFile  << "${vehicle.id},${vehicle.currentTime},${point.lat},${point.lon}\n"
+			int speed = totDistance/deltaTimeSecond*3.6
+			speedFile  << "${vehicle.id},${vehicle.currentTime},${speed}\n"
+			
 		}
 	}//each vehicles
 	
@@ -233,4 +241,5 @@ while(vehiclesInRace > 0){
 
 vehicles.each{
 	ignitionFile  << "${it.id},${it.currentTime},off\n"
+	speedFile  << "${it.id},${it.currentTime},0\n"
 }
