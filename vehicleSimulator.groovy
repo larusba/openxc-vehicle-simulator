@@ -19,6 +19,7 @@ def blockageFile = new File( args[1] )
 def geospatialFile = new File("data/latitute_longitude.csv")
 def ignitionFile = new File("data/ignition_status.csv")
 def speedFile = new File("data/vehicle_speed.csv")
+def engineFile = new File("data/engine_speed.csv")
 
 def jsonSlurper = new JsonSlurper()
 
@@ -32,7 +33,31 @@ def streetMap = [:]
 geospatialFile << "vechicle_id,timestamp,latitude,longitude\n"
 ignitionFile  << "vechicle_id,timestamp,value\n"
 speedFile  << "vechicle_id,timestamp,value\n"
+engineFile  << "vechicle_id,timestamp,value\n"
 
+
+def gearPositions = [:]
+gearPositions[1] = [min: 1, max: 10]
+gearPositions[2] = [min: 10, max: 30]
+gearPositions[3] = [min: 30, max: 60]
+gearPositions[4] = [min: 60, max: 90]
+gearPositions[5] = [min: 90, max: 130]
+
+def maxRpm = 3000
+def minRpm = 800
+
+def calculateEngineSpeed = { speed -> 
+	if(speed == 0)
+		return minRpm
+
+	def gp = gearPositions.find { 
+		it.value.min <= speed && speed < it.value.max 
+	}.value
+
+	def fat = (maxRpm - minRpm)/(gp.max - gp.min)
+
+	return 1000 + fat * (speed - gp.min) 
+}
 /*
 def calculateDistance = { lat1,lon1,lat2,lon2 ->
 	earthRadius = 6371000 // raggio della terra
@@ -169,6 +194,7 @@ blockageList.each{
 vehicles.each{
 	ignitionFile  << "${it.id},${it.currentTime},run\n"
 	speedFile  << "${it.id},${it.currentTime},0\n"
+	engineFile  << "${it.id},${it.currentTime},${minRpm}\n"
 }
 
 
@@ -233,7 +259,8 @@ while(vehiclesInRace > 0){
 			geospatialFile  << "${vehicle.id},${vehicle.currentTime},${point.lat},${point.lon}\n"
 			int speed = totDistance/deltaTimeSecond*3.6
 			speedFile  << "${vehicle.id},${vehicle.currentTime},${speed}\n"
-			
+			int engine = calculateEngineSpeed(speed)
+			engineFile << "${vehicle.id},${vehicle.currentTime},${engine}\n" 	
 		}
 	}//each vehicles
 	
@@ -242,4 +269,5 @@ while(vehiclesInRace > 0){
 vehicles.each{
 	ignitionFile  << "${it.id},${it.currentTime},off\n"
 	speedFile  << "${it.id},${it.currentTime},0\n"
+	engineFile  << "${it.id},${it.currentTime},0\n"
 }
