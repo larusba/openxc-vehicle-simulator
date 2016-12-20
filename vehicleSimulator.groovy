@@ -5,12 +5,11 @@ Use: <path.json>
 import groovy.json.*
 import static java.util.UUID.randomUUID 
 
-//TODO esternalizzare?
+//TODO external?
 def deltaTimeSecond=10
 def deltaTime = deltaTimeSecond * 1000  //millis
 def startTime = System.currentTimeMillis()
 def pointDistance = 4 //meter
-int maxNodes = 5  //numero massimo di nodi percorribili per unità di tempo
 
 def pathsFile = new File( args[0] )
 def blockageFile = new File( args[1] )
@@ -159,47 +158,58 @@ int vehiclesInRace = vehicles.size()
 while(vehiclesInRace > 0){
 	vehicles.each{
 		def vehicle = it	
-		if(!vehicle.arrived){
+		def pointsToRun = Math.abs(new Random().nextInt() %  vehicle.maxPointsInDeltaTime) + 1
+		long partialTime = deltaTime / pointsToRun
+		def point = vehicle.points[vehicle.currentPointIndex]	
 
-			def point = vehicle.points[vehicle.currentPointIndex]	
+		def internalTime = vehicle.currentTime
+		pointsToRun.times{
+			internalTime += partialTime
+			if(!vehicle.arrived){
 
-			vehicle.currentTime += deltaTime
+				point = vehicle.points[vehicle.currentPointIndex]	
 
-			if(geomap.isBlocked(point))
-			{
-				geomap.queueIn(point,vehicle.currentTime)	
-			}else{
 
-				boolean samePoint = true
-				int index = 0
-				while(samePoint)
+				if(geomap.isBlocked(point))
 				{
-					index++
-					samePoint = geomap.equals(point, vehicle.points[vehicle.currentPointIndex+index])
-				}
-			
-				def nextPosition = vehicle.currentPointIndex+index
-				if(nextPosition < vehicle.points.size())
-				{
-					def nextPoint = vehicle.points[nextPosition]	
-					def gnp = geomap.getPoint(nextPoint)
-					if(! gnp.occupied)
+					geomap.queueIn(point,internalTime)	
+				}else{
+
+					boolean samePoint = true
+					int index = 0
+					while(samePoint)
 					{
-						gnp.occupied = true
-						geomap.freePoint(point)
-						point = nextPoint
-						vehicle.currentPointIndex = nextPosition
+						index++
+						samePoint = geomap.equals(point, vehicle.points[vehicle.currentPointIndex+index])
 					}
-				}
-				else
-				{
-					vehicle.arrived = true
-					vehiclesInRace--
-					geomap.freePoint(point)
-				}
-			}//else blocked
+				
+					def nextPosition = vehicle.currentPointIndex+index
+					if(nextPosition < vehicle.points.size())
+					{
+						def nextPoint = vehicle.points[nextPosition]	
+						def gnp = geomap.getPoint(nextPoint)
+						if(! gnp.occupied)
+						{
+							gnp.occupied = true
+							geomap.freePoint(point)
+							point = nextPoint
+							vehicle.currentPointIndex = nextPosition
+						}
+					}
+					else
+					{
+						vehicle.arrived = true
+						vehiclesInRace--
+						geomap.freePoint(point)
+					}
+				}//else blocked
+			}//if vehicle arrived	
+		}//pointsToRun.times
+
+		vehicle.currentTime += deltaTime
+		if(!vehicle.arrived){
 			println "${vehicle.id},${vehicle.currentTime},${point.lat},${point.lon}"
-		}//if vehicle arrived	
+		}
 	}//each vehicles
 	
 } //while vehicle in race
