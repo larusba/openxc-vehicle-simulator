@@ -13,6 +13,7 @@ def pointDistance = 4 //meter
 
 def pathsFile = new File( args[0] )
 def blockageFile = new File( args[1] )
+def geospatialFile = new File("latitute_longitude.csv")
 
 def jsonSlurper = new JsonSlurper()
 
@@ -152,7 +153,7 @@ blockageList.each{
 	def bp = geomap.blockPoint(it,it.deltaTime*1000)
 }
 
-println "vechicle_id,timestamp,latitude,longitude"
+geospatialFile << "vechicle_id,timestamp,latitude,longitude\n"
 int vehiclesInRace = vehicles.size()
 //change with something
 while(vehiclesInRace > 0){
@@ -208,7 +209,7 @@ while(vehiclesInRace > 0){
 
 		vehicle.currentTime += deltaTime
 		if(!vehicle.arrived){
-			println "${vehicle.id},${vehicle.currentTime},${point.lat},${point.lon}"
+			geospatialFile  << "${vehicle.id},${vehicle.currentTime},${point.lat},${point.lon}\n"
 		}
 	}//each vehicles
 	
