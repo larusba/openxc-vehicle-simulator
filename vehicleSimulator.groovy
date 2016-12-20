@@ -20,6 +20,7 @@ def geospatialFile = new File("data/latitute_longitude.csv")
 def ignitionFile = new File("data/ignition_status.csv")
 def speedFile = new File("data/vehicle_speed.csv")
 def engineFile = new File("data/engine_speed.csv")
+def acceleratorFile = new File("data/accelerator_pedal_position.csv")
 
 def jsonSlurper = new JsonSlurper()
 
@@ -34,6 +35,7 @@ geospatialFile << "vechicle_id,timestamp,latitude,longitude\n"
 ignitionFile  << "vechicle_id,timestamp,value\n"
 speedFile  << "vechicle_id,timestamp,value\n"
 engineFile  << "vechicle_id,timestamp,value\n"
+acceleratorFile << "vechicle_id,timestamp,value\n" 
 
 
 def gearPositions = [:]
@@ -58,6 +60,11 @@ def calculateEngineSpeed = { speed ->
 
 	return 1000 + fat * (speed - gp.min) 
 }
+
+def calculateAcceleratorPedal = { engineSpeed ->
+	return 100*((engineSpeed - minRpm)/maxRpm)
+}
+
 /*
 def calculateDistance = { lat1,lon1,lat2,lon2 ->
 	earthRadius = 6371000 // raggio della terra
@@ -195,6 +202,7 @@ vehicles.each{
 	ignitionFile  << "${it.id},${it.currentTime},run\n"
 	speedFile  << "${it.id},${it.currentTime},0\n"
 	engineFile  << "${it.id},${it.currentTime},${minRpm}\n"
+	acceleratorFile  << "${it.id},${it.currentTime},0\n"
 }
 
 
@@ -261,6 +269,9 @@ while(vehiclesInRace > 0){
 			speedFile  << "${vehicle.id},${vehicle.currentTime},${speed}\n"
 			int engine = calculateEngineSpeed(speed)
 			engineFile << "${vehicle.id},${vehicle.currentTime},${engine}\n" 	
+			def accelerator = calculateAcceleratorPedal(engine)
+			acceleratorFile << "${vehicle.id},${vehicle.currentTime},${accelerator}\n" 	
+
 		}
 	}//each vehicles
 	
@@ -270,4 +281,5 @@ vehicles.each{
 	ignitionFile  << "${it.id},${it.currentTime},off\n"
 	speedFile  << "${it.id},${it.currentTime},0\n"
 	engineFile  << "${it.id},${it.currentTime},0\n"
+	acceleratorFile  << "${it.id},${it.currentTime},0\n"
 }
